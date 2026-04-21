@@ -5,70 +5,65 @@
 <title>BHYTE WASP Simulator</title>
 
 <style>
-html, body {
+body {
   margin: 0;
-  padding: 0;
-  background: #000;
+  background: black;
   color: white;
-  font-family: Arial, sans-serif;
-}
-
-.container {
+  font-family: Arial;
   text-align: center;
-  padding: 10px;
 }
 
 #price {
-  font-size: 120px;
+  font-size: 140px;
   font-weight: bold;
 }
 
-.info {
-  margin: 10px;
-  font-size: 18px;
-}
-
-.controls button {
+button {
   padding: 10px 20px;
   margin: 5px;
-  font-size: 18px;
-  border: none;
+  font-size: 16px;
   cursor: pointer;
-  border-radius: 5px;
 }
-
-.buy { background: #00ff88; }
-.sell { background: #ff3b3b; }
-.reset { background: #555; color: white; }
 
 canvas {
   background: #0a0a0a;
   border: 1px solid #222;
-  border-radius: 10px;
   margin-top: 10px;
+}
+
+/* marca de agua */
+.watermark {
+  position: fixed;
+  bottom: 10px;
+  right: 15px;
+  opacity: 0.2;
+  font-size: 20px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="container">
-  <h2>BHYTE WASP</h2>
-  <div id="price">$50.00</div>
+<h2>BHYTE WASP</h2>
 
-  <div class="info">💰 Balance: $<span id="balance">10000</span></div>
-  <div class="info">📦 Posición: <span id="shares">0</span> acciones</div>
-  <div class="info">📊 PnL: $<span id="pnl">0</span></div>
-  <div class="info" id="event"></div>
-
-  <div class="controls">
-    <button class="buy" onclick="buy()">BUY</button>
-    <button class="sell" onclick="sell()">SELL</button>
-    <button class="reset" onclick="resetGame()">RESET</button>
-  </div>
-
-  <canvas id="chart"></canvas>
+<div>
+  <button onclick="setAsset('gold')">ORO (GLD)</button>
+  <button onclick="setAsset('oil')">PETRÓLEO (USO)</button>
 </div>
+
+<div id="price">$0.00</div>
+
+<div>💰 Balance: $<span id="balance">10000</span></div>
+<div>📦 Posición: <span id="shares">0</span></div>
+<div>📊 PnL: $<span id="pnl">0</span></div>
+<div id="event"></div>
+
+<button onclick="buy()">BUY</button>
+<button onclick="sell()">SELL</button>
+
+<canvas id="chart"></canvas>
+
+<div class="watermark">Nicola</div>
 
 <script>
 const canvas = document.getElementById("chart");
@@ -76,15 +71,36 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth * 0.95;
 canvas.height = 400;
 
-// Estado
-let price = 50;
+let asset = "gold";
+
+// ESTADO
+let price = 440;
 let balance = 10000;
 let shares = 0;
 let avgPrice = 0;
 
 let candles = [];
 let currentCandle;
+
+let volatility = 1;
 let trend = 0;
+
+function setAsset(type) {
+  asset = type;
+
+  if (type === "gold") {
+    price = 440;
+    volatility = 0.5;
+    trend = 0.05;
+  } else {
+    price = 75;
+    volatility = 2;
+    trend = 0.2;
+  }
+
+  candles = [];
+  currentCandle = newCandle();
+}
 
 function newCandle() {
   return { open: price, high: price, low: price, close: price };
@@ -92,19 +108,22 @@ function newCandle() {
 
 currentCandle = newCandle();
 
-// EVENTOS
 function randomEvent() {
-  let rand = Math.random();
+  let r = Math.random();
 
-  if (rand < 0.01) {
-    price *= 1.3;
-    showEvent("🚀 PUMP");
-  } else if (rand < 0.02) {
-    price *= 0.7;
-    showEvent("💥 CRASH");
-  } else if (rand < 0.03) {
-    trend += (Math.random() - 0.5) * 5;
-    showEvent("📰 NEWS");
+  if (asset === "gold") {
+    if (r < 0.01) {
+      price *= 1.05;
+      showEvent("🏦 Safe Haven Pump");
+    }
+  } else {
+    if (r < 0.02) {
+      price *= 1.2;
+      showEvent("🛢️ Oil Spike");
+    } else if (r < 0.04) {
+      price *= 0.8;
+      showEvent("💥 Oil Crash");
+    }
   }
 }
 
@@ -114,12 +133,12 @@ function showEvent(text) {
   setTimeout(() => el.textContent = "", 2000);
 }
 
-// UPDATE PRECIO
 function update() {
-  trend += (Math.random() - 0.5) * 0.2;
-  let change = (Math.random() - 0.5) * 2 + trend;
+  trend += (Math.random() - 0.5) * 0.05;
 
+  let change = (Math.random() - 0.5) * volatility + trend;
   price += change;
+
   if (price < 1) price = 1;
 
   randomEvent();
@@ -138,31 +157,25 @@ function update() {
   updateUI();
 }
 
-// UI
 function updateUI() {
-  const priceEl = document.getElementById("price");
-  const balanceEl = document.getElementById("balance");
-  const sharesEl = document.getElementById("shares");
-  const pnlEl = document.getElementById("pnl");
-
   let color = currentCandle.close >= currentCandle.open ? "#00ff88" : "#ff3b3b";
-  priceEl.style.color = color;
-  priceEl.textContent = "$" + price.toFixed(2);
 
-  balanceEl.textContent = balance.toFixed(2);
-  sharesEl.textContent = shares;
+  document.getElementById("price").style.color = color;
+  document.getElementById("price").textContent = "$" + price.toFixed(2);
+
+  document.getElementById("balance").textContent = balance.toFixed(2);
+  document.getElementById("shares").textContent = shares;
 
   let pnl = shares * (price - avgPrice);
+  let pnlEl = document.getElementById("pnl");
   pnlEl.textContent = pnl.toFixed(2);
   pnlEl.style.color = pnl >= 0 ? "#00ff88" : "#ff3b3b";
 }
 
-// TRADING
 function buy() {
   if (balance >= price) {
     shares++;
     balance -= price;
-
     avgPrice = ((avgPrice * (shares - 1)) + price) / shares;
   }
 }
@@ -171,21 +184,10 @@ function sell() {
   if (shares > 0) {
     shares--;
     balance += price;
-
     if (shares === 0) avgPrice = 0;
   }
 }
 
-function resetGame() {
-  price = 50;
-  balance = 10000;
-  shares = 0;
-  avgPrice = 0;
-  candles = [];
-  currentCandle = newCandle();
-}
-
-// GRÁFICA
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -194,16 +196,6 @@ function draw() {
   let min = Math.min(...all.map(c => c.low));
 
   let w = canvas.width / 60;
-
-  // grid
-  ctx.strokeStyle = "#111";
-  for (let i = 0; i < 10; i++) {
-    let y = (i / 10) * canvas.height;
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(canvas.width, y);
-    ctx.stroke();
-  }
 
   all.forEach((c, i) => {
     let x = i * w;
@@ -224,14 +216,36 @@ function draw() {
     ctx.fillStyle = color;
     ctx.fillRect(x, Math.min(open, close), w*0.8, Math.abs(close - open) || 1);
   });
+}function setAsset(type) {
+  asset = type;
+
+  if (type === "gold") {
+    price = 442.35; // cierre simulado realista GLD
+    volatility = 0.5;
+    trend = 0.02;
+    document.getElementById("event").textContent = "🟡 GLD - Último cierre";
+  } else {
+    price = 74.80; // cierre simulado USO
+    volatility = 2;
+    trend = 0.1;
+    document.getElementById("event").textContent = "🛢️ USO - Último cierre";
+  }
+
+  candles = [];
+  currentCandle = newCandle();
 }
 
+<div id="assetName">Activo: GLD</div>
 function scale(v, min, max) {
   return canvas.height - ((v - min) / (max - min || 1)) * canvas.height;
 }
-
-setInterval(update, 200);
+document.getElementById("assetName").textContent =
+  type === "gold" ? "Activo: GLD (Gold ETF)" : "Activo: USO (Oil ETF)";setInterval(update, 200);
 </script>
+  function setAsset(type) {
+  
+
 
 </body>
 </html>
+
