@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>BHYTE WASP</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="container">
+    <h1>BHYTE WASP</h1>
+    <div id="price">$0.00</div>
+    <canvas id="chart" width="800" height="400"></canvas>
+  </div>
+
+<script>
+let price = 0.00;
+let history = [price];
+const priceElement = document.getElementById("price");
+const canvas = document.getElementById("chart");
+const ctx = canvas.getContext("2d");
+
+function updatePrice() {
+  let change = (Math.random() - 0.5) * 0.5; // movimiento aleatorio
+  let newPrice = price + change;
+
+  if (newPrice < 0) newPrice = 0;
+
+  let color = "green";
+  if (newPrice < price) color = "red";
+
+  price = newPrice;
+  history.push(price);
+
+  if (history.length > 100) history.shift();
+
+  priceElement.textContent = "$" + price.toFixed(2);
+  priceElement.style.color = color;
+
+  drawChart(color);
+}
+
+function drawChart(color) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.beginPath();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+
+  let max = Math.max(...history);
+  let min = Math.min(...history);
+
+  for (let i = 0; i < history.length; i++) {
+    let x = (i / history.length) * canvas.width;
+    let y = canvas.height - ((history[i] - min) / (max - min || 1)) * canvas.height;
+
+    if (i === 0) {
+      ctx.moveTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
+  }
+
+  ctx.stroke();
+}
+
+setInterval(updatePrice, 1000);
+</script>
+
+</body>
+</html>
