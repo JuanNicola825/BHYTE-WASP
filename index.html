@@ -1,85 +1,21 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>BHYTE WASP Simulator</title>
+<title>Login</title>
 
 <style>
 body {
-  margin: 0;
-  background: #000;
+  background: black;
   color: white;
-  font-family: Arial;
   text-align: center;
+  font-family: Arial;
 }
 
-/* HEADER */
-h1 {
+input, button {
+  padding: 10px;
   margin: 10px;
-  color: #888;
-}
-
-/* BOTONES */
-.asset-buttons {
-  margin: 10px;
-}
-
-.asset-buttons button {
-  padding: 10px 20px;
-  margin: 5px;
   font-size: 16px;
-  cursor: pointer;
-  border: none;
-  border-radius: 5px;
-  background: #222;
-  color: white;
-}
-
-.asset-buttons button.active {
-  background: #00ff88;
-  color: black;
-}
-
-/* PRECIO */
-#price {
-  font-size: 140px;
-  font-weight: bold;
-  margin: 10px 0;
-}
-
-/* INFO */
-.info {
-  margin: 5px;
-}
-
-/* TRADING */
-.controls button {
-  padding: 10px 20px;
-  margin: 5px;
-  font-size: 18px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.buy { background: #00ff88; }
-.sell { background: #ff3b3b; }
-.reset { background: #555; color: white; }
-
-/* CANVAS */
-canvas {
-  background: #0a0a0a;
-  border: 1px solid #222;
-  border-radius: 10px;
-  margin-top: 10px;
-}
-
-/* WATERMARK */
-.watermark {
-  position: fixed;
-  bottom: 10px;
-  right: 15px;
-  opacity: 0.2;
 }
 </style>
 </head>
@@ -88,196 +24,19 @@ canvas {
 
 <h1>BHYTE WASP</h1>
 
-<div class="asset-buttons">
-  <button id="goldBtn">ORO (GLD)</button>
-  <button id="oilBtn">PETRÓLEO (USO)</button>
-</div>
+<input id="username" placeholder="Usuario"><br>
+<input id="balance" placeholder="Monto inicial"><br>
 
-<div id="price">$0.00</div>
-
-<div class="info">💰 Balance: $<span id="balance">10000</span></div>
-<div class="info">📦 Posición: <span id="shares">0</span></div>
-<div class="info">📊 PnL: $<span id="pnl">0</span></div>
-<div class="info" id="event"></div>
-
-<div class="controls">
-  <button class="buy" id="buyBtn">BUY</button>
-  <button class="sell" id="sellBtn">SELL</button>
-  <button class="reset" id="resetBtn">RESET</button>
-</div>
-
-<canvas id="chart"></canvas>
-
-<div class="watermark">Nicola</div>
+<button onclick="start()">Entrar</button>
 
 <script>
-// ====== ELEMENTOS ======
-const priceEl = document.getElementById("price");
-const balanceEl = document.getElementById("balance");
-const sharesEl = document.getElementById("shares");
-const pnlEl = document.getElementById("pnl");
+function start() {
+  localStorage.setItem("user", document.getElementById("username").value);
+  localStorage.setItem("balance", document.getElementById("balance").value);
 
-const goldBtn = document.getElementById("goldBtn");
-const oilBtn = document.getElementById("oilBtn");
-
-const canvas = document.getElementById("chart");
-const ctx = canvas.getContext("2d");
-
-canvas.width = window.innerWidth * 0.95;
-canvas.height = 400;
-
-// ====== ESTADO ======
-let asset = "gold";
-let price = 442;
-let balance = 10000;
-let shares = 0;
-let avgPrice = 0;
-
-let volatility = 0.5;
-let trend = 0.02;
-
-let candles = [];
-let currentCandle;
-
-// ====== FUNCIONES ======
-function newCandle() {
-  return { open: price, high: price, low: price, close: price };
+  window.location.href = "stock.menu.html";
 }
-
-function setAsset(type) {
-  asset = type;
-
-  // reset botones
-  goldBtn.classList.remove("active");
-  oilBtn.classList.remove("active");
-
-  if (type === "gold") {
-    price = 442;
-    volatility = 0.5;
-    trend = 0.02;
-    goldBtn.classList.add("active");
-    showEvent("🟡 GLD seleccionado");
-  } else {
-    price = 75;
-    volatility = 2;
-    trend = 0.1;
-    oilBtn.classList.add("active");
-    showEvent("🛢️ USO seleccionado");
-  }
-
-  candles = [];
-  currentCandle = newCandle();
-}
-
-function showEvent(text) {
-  const el = document.getElementById("event");
-  el.textContent = text;
-  setTimeout(() => el.textContent = "", 2000);
-}
-
-function update() {
-  trend += (Math.random() - 0.5) * 0.05;
-
-  let change = (Math.random() - 0.5) * volatility + trend;
-  price += change;
-
-  if (price < 1) price = 1;
-
-  currentCandle.close = price;
-  currentCandle.high = Math.max(currentCandle.high, price);
-  currentCandle.low = Math.min(currentCandle.low, price);
-
-  if (Math.random() < 0.05) {
-    candles.push(currentCandle);
-    if (candles.length > 60) candles.shift();
-    currentCandle = newCandle();
-  }
-
-  draw();
-  updateUI();
-}
-
-function updateUI() {
-  let color = currentCandle.close >= currentCandle.open ? "#00ff88" : "#ff3b3b";
-
-  priceEl.textContent = "$" + price.toFixed(2);
-  priceEl.style.color = color;
-
-  balanceEl.textContent = balance.toFixed(2);
-  sharesEl.textContent = shares;
-
-  let pnl = shares * (price - avgPrice);
-  pnlEl.textContent = pnl.toFixed(2);
-  pnlEl.style.color = pnl >= 0 ? "#00ff88" : "#ff3b3b";
-}
-
-// ====== TRADING ======
-document.getElementById("buyBtn").onclick = () => {
-  if (balance >= price) {
-    shares++;
-    balance -= price;
-    avgPrice = ((avgPrice * (shares - 1)) + price) / shares;
-  }
-};
-
-document.getElementById("sellBtn").onclick = () => {
-  if (shares > 0) {
-    shares--;
-    balance += price;
-    if (shares === 0) avgPrice = 0;
-  }
-};
-
-document.getElementById("resetBtn").onclick = () => {
-  balance = 10000;
-  shares = 0;
-  avgPrice = 0;
-};
-
-// ====== EVENTOS BOTONES ======
-goldBtn.onclick = () => setAsset("gold");
-oilBtn.onclick = () => setAsset("oil");
-
-// ====== GRÁFICA ======
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  let all = [...candles, currentCandle];
-  let max = Math.max(...all.map(c => c.high));
-  let min = Math.min(...all.map(c => c.low));
-
-  let w = canvas.width / 60;
-
-  all.forEach((c, i) => {
-    let x = i * w;
-
-    let open = scale(c.open, min, max);
-    let close = scale(c.close, min, max);
-    let high = scale(c.high, min, max);
-    let low = scale(c.low, min, max);
-
-    let color = c.close >= c.open ? "#00ff88" : "#ff3b3b";
-
-    ctx.strokeStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(x + w/2, high);
-    ctx.lineTo(x + w/2, low);
-    ctx.stroke();
-
-    ctx.fillStyle = color;
-    ctx.fillRect(x, Math.min(open, close), w*0.8, Math.abs(close - open) || 1);
-  });
-}
-
-function scale(v, min, max) {
-  return canvas.height - ((v - min) / (max - min || 1)) * canvas.height;
-}
-
-// ====== START ======
-setAsset("gold");
-setInterval(update, 200);
 </script>
 
 </body>
 </html>
-
