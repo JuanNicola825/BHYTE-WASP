@@ -1,70 +1,181 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>BHYTE WASP</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>BHYTE WASP</title>
+
+<style>
+body { margin:0; background:black; color:white; font-family:Arial; text-align:center; }
+.screen { display:none; }
+.active { display:block; }
+
+button { padding:10px 20px; margin:5px; font-size:16px; cursor:pointer; }
+
+#price { font-size:120px; }
+
+canvas { background:#0a0a0a; margin-top:10px; }
+
+.watermark {
+  position:fixed;
+  bottom:10px;
+  right:15px;
+  opacity:0.2;
+}
+</style>
 </head>
+
 <body>
 
-  <div class="container">
-    <h1>BHYTE WASP</h1>
-    <div id="price">$0.00</div>
-    <canvas id="chart" width="800" height="400"></canvas>
-  </div>
+<!-- LOGIN -->
+<div id="login" class="screen active">
+  <h1>BHYTE WASP</h1>
+  <input id="user" placeholder="Usuario"><br>
+  <input id="money" placeholder="Monto inicial"><br>
+  <button onclick="start()">Entrar</button>
+</div>
+
+<!-- MENU -->
+<div id="menu" class="screen">
+  <h2>Elegí un activo</h2>
+
+  <button onclick="loadAsset('USO',75,3)">USO</button>
+  <button onclick="loadAsset('GLD',442,1)">GOLD</button>
+  <button onclick="loadAsset('QQQ',500,2)">QQQ</button>
+  <button onclick="loadAsset('NVIDIA',900,5)">NVIDIA</button>
+  <button onclick="loadAsset('APPLE',200,1.5)">APPLE</button>
+  <button onclick="loadAsset('MICROSOFT',420,1.5)">MICROSOFT</button>
+  <button onclick="loadAsset('TESLA',180,4)">TESLA</button>
+  <button onclick="loadAsset('BITCOIN',65000,500)">BITCOIN</button>
+  <button onclick="loadAsset('ETHEREUM',3000,100)">ETHEREUM</button>
+</div>
+
+<!-- TRADING -->
+<div id="trade" class="screen">
+  <h2 id="assetName"></h2>
+
+  <div id="price">$0.00</div>
+
+  <div>💰 Balance: <span id="balance"></span></div>
+  <div>📦 Acciones: <span id="shares">0</span></div>
+
+  <input id="stop" placeholder="Stop Loss"><br>
+
+  <button onclick="buy()">BUY</button>
+  <button onclick="sell()">SELL</button>
+  <button onclick="back()">⬅ Volver</button>
+
+  <canvas id="chart"></canvas>
+</div>
+
+<div class="watermark">Nicola</div>
 
 <script>
-let price = 0.00;
-let history = [price];
-const priceElement = document.getElementById("price");
+// ====== ESTADO ======
+let price = 0;
+let volatility = 1;
+let balance = 10000;
+let shares = 0;
+let stop = null;
+
+let history = [];
+
 const canvas = document.getElementById("chart");
 const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth * 0.9;
+canvas.height = 300;
 
-function updatePrice() {
-  let change = (Math.random() - 0.5) * 0.5; // movimiento aleatorio
-  let newPrice = price + change;
-
-  if (newPrice < 0) newPrice = 0;
-
-  let color = "green";
-  if (newPrice < price) color = "red";
-
-  price = newPrice;
-  history.push(price);
-
-  if (history.length > 100) history.shift();
-
-  priceElement.textContent = "$" + price.toFixed(2);
-  priceElement.style.color = color;
-
-  drawChart(color);
+// ====== PANTALLAS ======
+function show(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
 }
 
-function drawChart(color) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+// ====== LOGIN ======
+function start(){
+  balance = parseFloat(document.getElementById("money").value) || 10000;
+  show("menu");
+}
+
+// ====== CARGAR ACTIVO ======
+function loadAsset(name, startPrice, vol){
+  price = startPrice;
+  volatility = vol;
+  shares = 0;
+  history = [];
+
+  document.getElementById("assetName").textContent = name;
+  show("trade");
+}
+
+// ====== TRADING ======
+function buy(){
+  if(balance >= price){
+    shares++;
+    balance -= price;
+  }
+}
+
+function sell(){
+  if(shares > 0){
+    shares--;
+    balance += price;
+  }
+}
+
+document.getElementById("stop").onchange = e=>{
+  stop = parseFloat(e.target.value);
+};
+
+function back(){
+  show("menu");
+}
+
+// ====== UPDATE ======
+function update(){
+  let change = (Math.random() - 0.5) * volatility;
+  price += change;
+
+  if(price < 1) price = 1;
+
+  if(stop && price <= stop && shares > 0){
+    balance += shares * price;
+    shares = 0;
+    alert("STOP ejecutado");
+  }
+
+  history.push(price);
+  if(history.length > 100) history.shift();
+
+  draw();
+  updateUI();
+}
+
+function updateUI(){
+  document.getElementById("price").textContent = "$" + price.toFixed(2);
+  document.getElementById("balance").textContent = balance.toFixed(2);
+  document.getElementById("shares").textContent = shares;
+}
+
+// ====== GRAFICA ======
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
   ctx.beginPath();
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = "#00ff88";
 
-  let max = Math.max(...history);
-  let min = Math.min(...history);
+  history.forEach((p,i)=>{
+    let x = (i/history.length)*canvas.width;
+    let y = canvas.height - p;
 
-  for (let i = 0; i < history.length; i++) {
-    let x = (i / history.length) * canvas.width;
-    let y = canvas.height - ((history[i] - min) / (max - min || 1)) * canvas.height;
-
-    if (i === 0) {
-      ctx.moveTo(x, y);
-    } else {
-      ctx.lineTo(x, y);
-    }
-  }
+    if(i===0) ctx.moveTo(x,y);
+    else ctx.lineTo(x,y);
+  });
 
   ctx.stroke();
 }
 
-setInterval(updatePrice, 1000);
+// ====== LOOP ======
+setInterval(update,300);
 </script>
 
 </body>
