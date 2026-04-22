@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>QQQ</title>
+<style>
+body { background:black; color:white; text-align:center; font-family:Arial; }
+#price { font-size:100px; }
+button { padding:10px; margin:5px; }
+canvas { background:#0a0a0a; margin-top:10px; }
+.watermark { position:fixed; bottom:10px; right:15px; opacity:0.2; }
+</style>
+</head>
+<body>
+
+<h2>QQQ</h2>
+<div id="price">$500.00</div>
+
+<div>💰 Balance: <span id="balance"></span></div>
+<div>📦 Acciones: <span id="shares">0</span></div>
+
+<input id="stop" placeholder="Stop Loss"><br>
+
+<button onclick="buy()">BUY</button>
+<button onclick="sell()">SELL</button>
+
+<canvas id="chart"></canvas>
+<div class="watermark">Nicola</div>
+
+<script>
+let price = 500;
+let balance = parseFloat(localStorage.getItem("balance")) || 10000;
+let shares = 0;
+let stop = null;
+
+const canvas = document.getElementById("chart");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth * 0.9;
+canvas.height = 300;
+
+let history = [];
+
+function update(){
+  let change = (Math.random() - 0.5) * 2;
+  price += change;
+  if(price < 1) price = 1;
+
+  if(stop && price <= stop && shares > 0){
+    balance += shares * price;
+    shares = 0;
+    alert("STOP ejecutado");
+  }
+
+  history.push(price);
+  if(history.length > 100) history.shift();
+
+  draw();
+  updateUI();
+}
+
+function updateUI(){
+  document.getElementById("price").textContent = "$" + price.toFixed(2);
+  document.getElementById("balance").textContent = balance.toFixed(2);
+  document.getElementById("shares").textContent = shares;
+}
+
+function buy(){ if(balance >= price){ shares++; balance -= price; } }
+function sell(){ if(shares > 0){ shares--; balance += price; } }
+
+document.getElementById("stop").onchange = e=> stop = parseFloat(e.target.value);
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.beginPath();
+  ctx.strokeStyle = "#00ff88";
+  history.forEach((p,i)=>{
+    let x=(i/history.length)*canvas.width;
+    let y=canvas.height-p;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+}
+
+document.getElementById("balance").textContent = balance;
+setInterval(update,300);
+</script>
+
+</body>
+</html>
